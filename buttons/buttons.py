@@ -1,29 +1,52 @@
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram import types
 from aiogram.types import Message
-from config.base import get_account_info
+from config.base import get_account_info, get_root, catalog, delete_product
+
+
 
 
 """Раздел обработки кнопок, связанных с каталогом товаров"""
 
 
 async def buttons_panel(message: Message):
-    kb = [
-        [
-            types.KeyboardButton(text='Каталог'),
-            types.KeyboardButton(text='Аккаунт'),
-            types.KeyboardButton(text='Кошелек')
-        ],
-    ]
-    keyboards = types.ReplyKeyboardMarkup(
-        keyboard=kb,
-        resize_keyboard=True,
-        input_field_placeholder='Выберите действие'
-    )
+    if get_root(message.from_user.id) == 0:
+
+        kb = [
+            [
+                types.KeyboardButton(text='Каталог'),
+                types.KeyboardButton(text='Аккаунт'),
+                types.KeyboardButton(text='Кошелек')
+            ],
+        ]
+        keyboards = types.ReplyKeyboardMarkup(
+            keyboard=kb,
+            resize_keyboard=True,
+            input_field_placeholder='Выберите действие'
+        )
+    else:
+        kb = [
+            [
+                types.KeyboardButton(text='Каталог'),
+                types.KeyboardButton(text='Аккаунт'),
+                types.KeyboardButton(text='Кошелек'),
+            ],
+            [
+                types.KeyboardButton(text='Начислить монет'),
+                types.KeyboardButton(text='Добавить товар'),
+                types.KeyboardButton(text='Удалить товар'),
+            ]
+        ]
+        keyboards = types.ReplyKeyboardMarkup(
+            keyboard=kb,
+            resize_keyboard=True,
+            input_field_placeholder='Выберите действие'
+        )
+
     await message.answer('Куда отправимся?', reply_markup=keyboards)
 
 
-async def send_catalog_keyboard(message: Message):
+async def send_category_keyboard(message: Message):
     builder = InlineKeyboardBuilder()
     builder.add(
         types.InlineKeyboardButton(
@@ -37,6 +60,21 @@ async def send_catalog_keyboard(message: Message):
         )
     )
     await message.answer('Выберите раздел.', reply_markup=builder.as_markup())
+
+
+async def _send_cups():
+    catalog(0,0,0,0)
+
+
+async def valid_articul(message):
+    articul = message.text
+    print(articul)
+    result = delete_product(articul)
+
+    if result == 'deleted':
+        await message.answer('Товар успешно удален')
+    elif result == 'not_found':
+        await message.answer('Товар не найден')
 
 
 """Раздел обработки аккаунта"""
@@ -65,5 +103,3 @@ async def wallet_info(message: Message):
         ))
 
     await message.answer('Ты пока бомж', reply_markup=builder.as_markup())
-
-
