@@ -1,9 +1,7 @@
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram import types
 from aiogram.types import Message
-from config.base import get_account_info, get_root, catalog, delete_product, send_cups_from_catalog
-
-
+from config.base import get_account_info, get_root, catalog, delete_product, send_product_from_catalog
 
 
 """Раздел обработки кнопок, связанных с каталогом товаров"""
@@ -62,9 +60,14 @@ async def send_category_keyboard(message: Message):
     await message.answer('Выберите раздел.', reply_markup=builder.as_markup())
 
 
-async def _send_cups(category):
-    send_cups_from_catalog(category)
+async def _send_cups(callback_query, category):
+    cups = send_product_from_catalog(category)
+    chat_id = callback_query.message.chat.id
 
+    for cup in cups:
+        articul, name, price, count, url = cup[1], cup[2],cup[3], cup[4], cup[5]
+        response_message = f"Артикул: {articul}\nНазвание: {name}\nЦена: {price}\nКоличество: {count}\n Фото: {url}"
+        await callback_query.bot.send_message(chat_id, response_message)
 
 async def valid_articul(message):
     articul = message.text
@@ -94,6 +97,7 @@ async def account_info(message: Message):
 
 
 """раздел обработки кнопки кошелька"""
+
 
 async def wallet_info(message: Message):
     builder = InlineKeyboardBuilder()
