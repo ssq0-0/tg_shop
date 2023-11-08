@@ -7,7 +7,7 @@ from buttons.buttons import buttons_panel, send_category_keyboard, account_info,
 from registrations.registration import start
 from config.base import catalog
 
-articul_product, name_product, price_product, count_product, category_product = "", "", 0, 0, ""
+articul_product, name_product, price_product, count_product, category_product, photo_product = "", "", 0, 0, "", ""
 
 
 class AwaitArct(StatesGroup):
@@ -16,6 +16,7 @@ class AwaitArct(StatesGroup):
     price_product = State()
     count_product = State()
     ctaegory_product = State()
+    image_product = State()
     delete = State()
 
 
@@ -34,7 +35,7 @@ async def send_catalog(message: Message):
 
 @router.callback_query(F.data == 'Cups')
 async def cup_catalog(callback: types.CallbackQuery):
-    await _send_cups(category='Cups')
+    await _send_cups(callback, category='Cups')
 
 
 @router.callback_query(F.data == 'Sweatshirt')
@@ -109,7 +110,14 @@ async def _input_count_price(message: Message, state: FSMContext):
 async def _input_category_product(message: Message, state: FSMContext):
     global category_product
     category_product = message.text
-    catalog(articul_product, category_product, price_product, count_product, name_product)
+    await message.answer('Отправьте фотографию товара')
+    await state.set_state(AwaitArct.image_product)
+
+
+@router.message(AwaitArct.image_product)
+async def _send_image(message: Message, state: FSMContext):
+    url_link = message.text
+    catalog(articul_product, category_product, price_product, count_product, name_product, url_link)
     await message.answer('Ожидаем добавления...')
     await state.clear()
 
