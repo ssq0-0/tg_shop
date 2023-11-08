@@ -44,7 +44,7 @@ def get_root(user_id):
     return request[0]
 
 
-def catalog(articul, category, price, count, name):
+def catalog(articul, category, price, count, name, url):
     sql_connection = sqlite3.connect('shop_base.db')
     cursor = sql_connection.cursor()
 
@@ -54,12 +54,13 @@ def catalog(articul, category, price, count, name):
         articul TEXT,
         price INT,
         count INT
+        url TEXT
     )""")
     sql_connection.commit()
 
     cursor.execute(f"SELECT articul FROM  catalog WHERE articul = ?", (articul,))
     if cursor.fetchone() is None:
-        cursor.execute(f"INSERT INTO catalog VALUES (?, ?, ?, ?, ?)", (category, name,articul,  price, count))
+        cursor.execute(f"INSERT INTO catalog VALUES (?, ?, ?, ?, ?, ?)", (category, name, articul,  price, count, url))
         sql_connection.commit()
     else:
         pass
@@ -77,7 +78,7 @@ def delete_product(art):
     else:
         return 'not_found'
 
-def send_cups_from_catalog(category):
+def send_product_from_catalog(category):
     sql_connection = sqlite3.connect('shop_base.db')
     cursor = sql_connection.cursor()
 
