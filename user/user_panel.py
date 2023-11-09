@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram import Router, types, F
 from aiogram.types import Message
 from aiogram.filters import Command
-from buttons.buttons import buttons_panel, send_category_keyboard, account_info, wallet_info, _send_cups, valid_articul
+from buttons.buttons import buttons_panel, send_category_keyboard, account_info, wallet_info, _send_cups, valid_articul, _send_sweatshirt, _send_others
 from registrations.registration import start
 from config.base import catalog
 
@@ -33,19 +33,19 @@ async def send_catalog(message: Message):
     await send_category_keyboard(message)
 
 
-@router.callback_query(F.data == 'Cups')
+@router.callback_query(F.data == 'кружки')
 async def cup_catalog(callback: types.CallbackQuery):
-    await _send_cups(callback, category='Cups')
+    await _send_cups(callback, category='кружки')
 
 
-@router.callback_query(F.data == 'Sweatshirt')
+@router.callback_query(F.data == 'свитшоты')
 async def sweatshirt_ctalog(callback: types.CallbackQuery):
-    await callback.message.answer('Вы выбрали свитшоты')
+    await _send_sweatshirt(callback, category='свитшоты')
 
 
-@router.callback_query(F.data == 'Others')
+@router.callback_query(F.data == 'прочее')
 async def others_catalog(callback: types.CallbackQuery):
-    await callback.message.answer('Вы выбрали прочее')
+    await _send_others(callback, category='прочее')
 
 
 @router.message(F.text == 'Аккаунт')
@@ -118,7 +118,7 @@ async def _input_category_product(message: Message, state: FSMContext):
 async def _send_image(message: Message, state: FSMContext):
     url_link = message.text
     catalog(articul_product, category_product, price_product, count_product, name_product, url_link)
-    await message.answer('Ожидаем добавления...')
+    await message.answer('Товар добавлен')
     await state.clear()
 
 
