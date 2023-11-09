@@ -1,136 +1,128 @@
-from aiogram.filters.state import State, StatesGroup
-from aiogram.fsm.context import FSMContext
-from aiogram import Router, types, F
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram import types
 from aiogram.types import Message
-from aiogram.filters import Command
-from buttons.buttons import buttons_panel, send_category_keyboard, account_info, wallet_info, _send_cups, valid_articul, _send_sweatshirt, _send_others
-from registrations.registration import start
-from config.base import catalog
-
-articul_product, name_product, price_product, count_product, category_product, photo_product = "", "", 0, 0, "", ""
+from config.base import get_account_info, get_root, catalog, delete_product, send_product_from_catalog
 
 
-class AwaitArct(StatesGroup):
-    articul = State()
-    name_product = State()
-    price_product = State()
-    count_product = State()
-    ctaegory_product = State()
-    image_product = State()
-    delete = State()
+"""Раздел обработки кнопок, связанных с каталогом товаров"""
 
 
-router = Router()
+async def buttons_panel(message: Message):
+    if get_root(message.from_user.id) == 0:
+
+        kb = [
+            [
+                types.KeyboardButton(text='Каталог'),
+                types.KeyboardButton(text='Аккаунт'),
+                types.KeyboardButton(text='Кошелек')
+            ],
+        ]
+        keyboards = types.ReplyKeyboardMarkup(
+            keyboard=kb,
+            resize_keyboard=True,
+            input_field_placeholder='Выберите действие'
+        )
+    else:
+        kb = [
+            [
+                types.KeyboardButton(text='Каталог'),
+                types.KeyboardButton(text='Аккаунт'),
+                types.KeyboardButton(text='Кошелек'),
+            ],
+            [
+                types.KeyboardButton(text='Начислить монет'),
+                types.KeyboardButton(text='Добавить товар'),
+                types.KeyboardButton(text='Удалить товар'),
+            ]
+        ]
+        keyboards = types.ReplyKeyboardMarkup(
+            keyboard=kb,
+            resize_keyboard=True,
+            input_field_placeholder='Выберите действие'
+        )
+
+    await message.answer('Куда отправимся?', reply_markup=keyboards)
 
 
-@router.message(Command('menu'))
-async def react_to_menu(message: Message):
-    await buttons_panel(message)
+async def send_category_keyboard(message: Message):
+    builder = InlineKeyboardBuilder()
+    builder.add(
+        types.InlineKeyboardButton(
+            text="Кружки", callback_data="кружки"
+        ),
+        types.InlineKeyboardButton(
+            text="Свитшоты", callback_data="свитшоты"
+        ),
+        types.InlineKeyboardButton(
+            text="Прочее", callback_data="прочее"
+        )
+    )
+    await message.answer('Выберите раздел.', reply_markup=builder.as_markup())
 
 
-@router.message(F.text == 'Каталог')
-async def send_catalog(message: Message):
-    await send_category_keyboard(message)
+async def _send_cups(callback_query, category):
+    cups = send_product_from_catalog(category)
+    chat_id = callback_query.message.chat.id
+
+    for cup in cups:
+        articul, name, price, count, url = cup[1], cup[2],cup[3], cup[4], cup[5]
+        response_message = f"Артикул: {articul}\nНазвание: {name}\nЦена: {price}\nКоличество: {count}\n Фото: {url}"
+        await callback_query.bot.send_message(chat_id, response_message)
+
+async def _send_sweatshirt(callback_query, category):
+    sweatshirt = send_product_from_catalog(category)
+    chat_id = callback_query.message.chat.id
+
+    for sweatshirts in sweatshirt:
+        articul, name, price, count, url = sweatshirts[1], sweatshirts[2], sweatshirts[3], sweatshirts[4], sweatshirts[5]
+        response_message = f"Артикул: {articul}\nНазвание: {name}\nЦена: {price}\nКоличество: {count}\n Фото: {url}"
+        await callback_query.bot.send_message(chat_id, response_message)
+
+async def _send_others(callback_query, category):
+    others = send_product_from_catalog(category)
+    chat_id = callback_query.message.chat.id
+
+    for other in others:
+        articul, name, price, count, url = other[1], other[2], other[3], other[4], other[5]
+        response_message = f"Артикул: {articul}\nНазвание: {name}\nЦена: {price}\nКоличество: {count}\n Фото: {url}"
+        await callback_query.bot.send_message(chat_id, response_message)
+async def valid_articul(message):
+    articul = message.text
+    print(articul)
+    result = delete_product(articul)
+
+    if result == 'deleted':
+        await message.answer('Товар успешно удален')
+    elif result == 'not_found':
+        await message.answer('Товар не найден')
 
 
-@router.callback_query(F.data == 'кружки')
-async def cup_catalog(callback: types.CallbackQuery):
-    await _send_cups(callback, category='кружки')
+"""Раздел обработки аккаунта"""
 
 
-@router.callback_query(F.data == 'свитшоты')
-async def sweatshirt_ctalog(callback: types.CallbackQuery):
-    await _send_sweatshirt(callback, category='свитшоты')
+async def account_info(message: Message):
+    account_info = get_account_info(message.from_user.id)
+    name, age, number, address = account_info[1], account_info[2], account_info[3], account_info[4]
+
+    builder = InlineKeyboardBuilder()
+    builder.add(types.InlineKeyboardButton(
+            text='Изменить', callback_data='Change')
+    )
+    text = f"ID: {message.from_user.id}\nИмя: {name}\nВозраст: {age}\nНомер телефона: {number}\nАдрес: {address}"
+
+    await message.answer(text, reply_markup=builder.as_markup())
 
 
-@router.callback_query(F.data == 'прочее')
-async def others_catalog(callback: types.CallbackQuery):
-    await _send_others(callback, category='прочее')
+"""раздел обработки кнопки кошелька"""
 
 
-@router.message(F.text == 'Аккаунт')
-async def print_account_info(message: Message):
-    await account_info(message)
+async def wallet_info(message: Message):
+    builder = InlineKeyboardBuilder()
+    builder.add(
+        types.InlineKeyboardButton(
+            text='Перевести другому пользователю', callback_data='Transfer'
+        ))
 
+    await message.answer('Ты пока бомж', reply_markup=builder.as_markup())
 
-@router.callback_query(F.data == 'Change')
-async def change_user_info(callback: types.CallbackQuery, state: FSMContext):
-    await start(callback.message, state)
-
-
-@router.message(F.text == 'Кошелек')
-async def print_wallet_info(message: Message):
-    await wallet_info(message)
-
-
-@router.callback_query(F.data == 'Transfer')
-async def transfer_from_to(callback: types.CallbackQuery):
-    await callback.message.answer('Трансфера потом')
-
-
-@router.message(F.text == 'Добавить товар')
-async def append_product(message: Message, state: FSMContext):
-    await message.answer('Введите артикул товара')
-    await state.set_state(AwaitArct.articul)
-
-
-@router.message(AwaitArct.articul)
-async def _input_arcticul(message: Message, state: FSMContext):
-    global articul_product
-    articul_product = message.text
-    await message.answer('Введите название товара')
-    await state.set_state(AwaitArct.name_product)
-
-
-@router.message(AwaitArct.name_product)
-async def _input_name_product(message: Message, state: FSMContext):
-    global name_product
-    name_product = message.text
-    await message.answer('Введите цену товара')
-    await state.set_state(AwaitArct.price_product)
-
-
-@router.message(AwaitArct.price_product)
-async def _input_price_product(message: Message, state: FSMContext):
-    global price_product
-    price_product = message.text
-    await message.answer('Введите количество товара')
-    await state.set_state(AwaitArct.count_product)
-
-
-@router.message(AwaitArct.count_product)
-async def _input_count_price(message: Message, state: FSMContext):
-    global count_product
-    count_product = message.text
-    await message.answer('Введите категорию товара')
-    await state.set_state(AwaitArct.ctaegory_product)
-
-
-@router.message(AwaitArct.ctaegory_product)
-async def _input_category_product(message: Message, state: FSMContext):
-    global category_product
-    category_product = message.text
-    await message.answer('Отправьте фотографию товара')
-    await state.set_state(AwaitArct.image_product)
-
-
-@router.message(AwaitArct.image_product)
-async def _send_image(message: Message, state: FSMContext):
-    url_link = message.text
-    catalog(articul_product, category_product, price_product, count_product, name_product, url_link)
-    await message.answer('Товар добавлен')
-    await state.clear()
-
-
-@router.message(F.text == 'Удалить товар')
-async def react_to_delete(message: Message, state: FSMContext):
-    await message.answer('Напишите артикул удаляемого товара')
-    await state.set_state(AwaitArct.delete)
-
-
-@router.message(AwaitArct.delete)
-async def _delete_product_from_catalog(message: Message, state: FSMContext):
-    articul_product = message
-    await state.clear()
-    await valid_articul(articul_product)
 
