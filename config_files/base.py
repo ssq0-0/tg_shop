@@ -2,7 +2,7 @@ import sqlite3
 
 
 def registration_in_base(id, name, age, number, address):
-    root, balance = 0, 0
+    root, balance = 0, 100
     sql_connect = sqlite3.connect('shop_base.db')
     cursor = sql_connect.cursor()
     print('Подключен к базе данных')
@@ -88,46 +88,55 @@ def send_product_from_catalog(category):
     return data
 
 
-# def get_info_order():
-#     sqlite_connection = sqlite3.connect('shop_base.db')
-#     cursor = sqlite_connection.cursor()
-#
-#     order_info_arr = []
-#     sqlite_select_query = """SELECT * from order"""
-#     cursor.execute(sqlite_select_query)
-#     rows = cursor.fetchall()
-#     cursor.close()
-#
-#     for row in rows:
-#         order_info = {
-#             "ID заказа": row[0],
-#             "ID пользователя": row[1],
-#             "ФИО": row[2],
-#             "Номер телефона": row[3],
-#             "Адрес": row[4],
-#             "e-mail": row[5],
-#             "Артикул товара": row[6]
-#         }
-#         order_info_arr.append(order_info)
-#     sqlite_connection.close()
-#
-#     return order_info_arr
-#
-#
-#
-#
-# def insert_varible_into_order(id, FIO, phone, address, email, art):
-#     sqlite_connection = sqlite3.connect('test.db')
-#     cursor = sqlite_connection.cursor()
-#     print("Подключен к SQLite")
-#
-#     # Добавление данных в каталог
-#     sqlite_insert_with_param = """INSERT INTO order
-#                                     (id, FIO, phone, address, email, art)
-#                                      VALUES (?, ?, ?, ?, ?, ?);"""
-#     data_tuple = (id, FIO, phone, address, email, art)
-#     cursor.execute(sqlite_insert_with_param, data_tuple)
-#     sqlite_connection.commit()
-#     cursor.close()
-#
-#     sqlite_connection.close()
+def change_balance(id, Balance):
+    sqlite_connection = sqlite3.connect('shop_base.db')
+    cursor = sqlite_connection.cursor()
+
+    sql_info_balance = """SELECT balance from users where id = ?"""
+    cursor.execute(sql_info_balance, (id,))
+    row = cursor.fetchone()
+    value = row[0] + Balance
+    sql_update_query = """Update users set balance = ? where id = ?"""
+    data = (value, id)
+    cursor.execute(sql_update_query, data)
+    sqlite_connection.commit()
+
+    cursor.close()
+    sqlite_connection.close()
+
+
+def get_info_order():
+    sqlite_connection = sqlite3.connect('shop_base.db')
+    cursor = sqlite_connection.cursor()
+
+    order_info_arr = []
+    sqlite_select_query = """SELECT * from order"""
+    cursor.execute(sqlite_select_query)
+    rows = cursor.fetchall()
+    cursor.close()
+
+    for row in rows:
+        order_info = {
+        "ID заказа": row[0],
+        "ID пользователя": row[1],
+        "ФИО": row[2],
+        "Номер телефона": row[3],
+        "Адрес": row[4],
+        "Артикул товара": row[5]
+        }
+        order_info_arr.append(order_info)
+    sqlite_connection.close()
+
+    return order_info_arr
+
+
+def creating_order(id, FIO, phone, address, art):
+    sqlite_connection = sqlite3.connect('shop_base.db')
+    cursor = sqlite_connection.cursor()
+    # Добавление данных в каталог
+    sqlite_insert_with_param = """INSERT INTO orders (id, FIO, number, address, art) VALUES (?, ?, ?, ?, ?);"""
+    data_tuple = (id, FIO, phone, address, art)
+    cursor.execute(sqlite_insert_with_param, data_tuple)
+    sqlite_connection.commit()
+    cursor.close()
+    sqlite_connection.close()
